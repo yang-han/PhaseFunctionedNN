@@ -83,15 +83,14 @@ def train_pfnn():
             optimizer.step()
             running_loss += loss.item()
             total_loss = loss.item()
-            if i % 20 == 0:
+            if i % 20 == 19:
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 2000))
                 running_loss = 0.0
 
             writer.add_scalar('data/loss', loss, epoch)
-            if epoch % 10 == 9:
-                torch.save(net.state_dict(),
-                           'models/pfnn_params{}.pkl'.format(epoch))
+            torch.save(net.state_dict(),
+                       'models/pfnn_params{}.pkl'.format(epoch))
 
     writer.export_scalars_to_json("./test.json")
     writer.close()

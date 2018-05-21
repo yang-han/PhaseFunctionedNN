@@ -28,11 +28,11 @@ class BVHDataset(Dataset):
 
     def __len__(self):
         return self.bvh.length - trajectory_length - 1
-    
+
     @property
     def in_features(self):
         return trajectory_length*num_of_root_infos + self.bvh.num_of_angles
-    
+
     @property
     def out_features(self):
         return trajectory_length*num_of_root_infos + self.bvh.num_of_angles + 1
