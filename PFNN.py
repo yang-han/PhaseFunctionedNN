@@ -3,6 +3,7 @@ import torchvision
 import torch.nn as nn
 import torch.optim as optim
 import math
+import numpy as np
 
 
 class BaseNet(nn.Module):
@@ -41,6 +42,8 @@ class PFNN(nn.Module):
         # self.fc1s = [self.fc10, self.fc11, self.fc12, self.fc13]
         # self.fc2s = [self.fc20, self.fc21, self.fc22, self.fc23]
         # self.fc3s = [self.fc30, self.fc31, self.fc32, self.fc33]
+        self.in_features = in_features
+        self.out_features = out_features
         self.fc1s = nn.ModuleList(
             [nn.Linear(in_features, hidden_units) for i in range(4)])
         self.fc2s = nn.ModuleList(
@@ -51,10 +54,12 @@ class PFNN(nn.Module):
         self.elu = nn.ELU()
 
     def forward(self, x, p):
-        phase = (4*p)/2*math.pi
+        phase = (4*p)/2*np.pi
         w = phase % 1
-        k = math.floor(phase)
+        k = torch.tensor(np.floor(phase), dtype=torch.int32).cuda()
         base_k = k - 1
+        output = torch.zeros((x.shape[0], self.out_features),
+                             dtype=torch.float32).cuda()
         y1 = self.elu(self.cubic(self.fc1s[base_k % 4](x),
                                  self.fc1s[(base_k+1) % 4](x),
                                  self.fc1s[(base_k+2) % 4](x),

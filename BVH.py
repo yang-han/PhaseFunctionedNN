@@ -30,11 +30,11 @@ class BVH:
 
     @property
     def motion_angles(self):
-        return self.motions[:, abandon_items:]
+        return self.motions[:, num_of_root_infos:]
 
     @property
     def num_of_angles(self):
-        return self.motions.shape[1]-abandon_items
+        return self.motions.shape[1]-num_of_root_infos
 
     @property
     def length(self):

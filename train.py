@@ -9,6 +9,7 @@ from tensorboardX import SummaryWriter
 from hyperparams import *
 from BVH import BVH
 from SeqDataset import SeqBVHDataset
+from Dataset import BVHDataset
 
 
 def train_base_net():
@@ -58,29 +59,31 @@ def train_base_net():
 
 def train_pfnn():
     writer = SummaryWriter()
-    bvh = BVH()
-    bvh.load(bvh_path)
-    print(bvh.motions[:, 6:].shape)
-    bvh_dataset = SeqBVHDataset(bvh, num_of_frames)
-    dataloader = DataLoader(bvh_dataset, batch_size=4,
+    dataset = BVHDataset(base_dir + bvh_path)
+    dataloader = DataLoader(dataset, batch_size=4,
                             shuffle=True, num_workers=4)
-    # train()
-    net = PFNN(bvh.num_of_angles, bvh.num_of_angles)
+    net = PFNN(dataset.in_features, dataset.out_features).float().cuda()
     criterion = nn.SmoothL1Loss()
     optimizer = optim.SGD(net.parameters(), lr=0.0001, momentum=0.9)
     for epoch in range(30):
         running_loss = 0
         total_loss = 0
         for i, samples in enumerate(dataloader, 0):
-            x, y = samples
-            pred = net(x)
+            x, p, y = samples
+            x = x.float().cuda()
+            y = y.float().cuda()
+            p = p.float().cuda()
+            preds = torch.zeros_like(y, dtype=torch.float32)
+            for _i, _p in enumerate(p):
+                preds[_i] = net(x[_i].cuda(), _p.cuda())
+                # print(preds[_i])
             optimizer.zero_grad()
-            loss = criterion(pred, y)
+            loss = criterion(preds, y)
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
             total_loss = loss.item()
-            if i % 20 == 19:
+            if i % 20 == 0:
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 2000))
                 running_loss = 0.0
@@ -95,5 +98,5 @@ def train_pfnn():
 
 
 if __name__ == "__main__":
-    train_base_net()
-    # train_pfnn()
+    # train_base_net()
+    train_pfnn()
