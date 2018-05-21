@@ -1,0 +1,6 @@
+__pycache__/
+.vscode/
+16/
+runs/
+models/
+*.bvh
