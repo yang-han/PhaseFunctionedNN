@@ -9,7 +9,7 @@ from tensorboardX import SummaryWriter
 from hyperparams import *
 from BVH import BVH
 from SeqDataset import SeqBVHDataset
-from Dataset import BVHDataset
+from Dataset import BVHDataset, BVHDataset2
 
 
 def train_base_net():
@@ -59,15 +59,15 @@ def train_base_net():
 
 def train_pfnn():
     writer = SummaryWriter()
-    dataset = BVHDataset(base_dir + bvh_path)
+    dataset = BVHDataset2(base_dir + bvh_path)
     dataloader = DataLoader(dataset, batch_size=4,
                             shuffle=True, num_workers=4)
     net = PFNN(dataset.in_features, dataset.out_features).float().cuda()
     criterion = nn.SmoothL1Loss()
     optimizer = optim.SGD(net.parameters(), lr=1e-5,
                           momentum=0.9, weight_decay=0.0025)
-    net.load_state_dict(torch.load('models/pfnn_params84.pkl'))
-    for epoch in range(85, 100):
+    net.load_state_dict(torch.load('models/2_pfnn_params7.pkl'))
+    for epoch in range(8, 100):
         running_loss = 0
         total_loss = 0
         for i, samples in enumerate(dataloader, 0):
@@ -87,12 +87,12 @@ def train_pfnn():
             total_loss = loss.item()
             if i % 20 == 19:
                 print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 2000))
+                      (epoch + 1, i + 1, running_loss / 20))
                 running_loss = 0.0
 
             writer.add_scalar('data/loss', loss, epoch)
             torch.save(net.state_dict(),
-                       'models/pfnn_params{}.pkl'.format(epoch))
+                       'models/2_pfnn_params{}.pkl'.format(epoch))
 
     writer.export_scalars_to_json("./test.json")
     writer.close()

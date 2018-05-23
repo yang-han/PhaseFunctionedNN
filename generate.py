@@ -3,7 +3,7 @@ import numpy as np
 from PFNN import BaseNet, PFNN
 from BVH import BVH
 from hyperparams import *
-from Dataset import BVHDataset
+from Dataset import BVHDataset, BVHDataset2
 
 frames = 1000
 
@@ -40,21 +40,18 @@ def base_net_inference():
     bvh.save(output_path, all_states)
 
 
-start_index = 196
-
-
 def pfnn_inference():
     dataset = BVHDataset(base_dir + bvh_path)
     print(dataset.in_features, dataset.out_features)
     pfnn = PFNN(dataset.in_features, dataset.out_features).float()
-    pfnn.load_state_dict(torch.load('models/pfnn_params90.pkl'))
+    pfnn.load_state_dict(torch.load('models/pfnn_params99.pkl'))
     bvh = dataset.bvh
-    init_state = dataset.bvh.motions[start_index, :num_of_root_infos]
-    init_angles = bvh.motion_angles[start_index]
+    init_state = dataset.bvh.motions[0, :num_of_root_infos]
+    init_angles = bvh.motion_angles[0]
     phase = 0
     # print(len(dataset[0]))
-    trajectory = dataset[start_index][0][0][:num_of_root_infos *
-                                            trajectory_length]
+    trajectory = dataset[0][0][0][:num_of_root_infos *
+                                  trajectory_length]
     # print(len(trajectory))
     motions = np.zeros((frames, bvh.num_of_angles+num_of_root_infos))
     angles = init_angles
@@ -66,7 +63,7 @@ def pfnn_inference():
     for i in range(frames):
         print('i:  ', i)
         x = torch.cat(
-            (torch.tensor(fake_trajectory, dtype=torch.float32)
+            (torch.tensor(trajectory, dtype=torch.float32)
              .view(1, num_of_root_infos*trajectory_length),
              torch.tensor(angles, dtype=torch.float32).view(1, 90)), dim=1)
         y = pfnn(x, phase)
@@ -74,6 +71,7 @@ def pfnn_inference():
         trajectory = y[:, :trajectory_length*num_of_root_infos]
         phase += y[0, trajectory_length*num_of_root_infos]/phase_scale
         phase = phase.detach()
+        print(phase)
         angles = y[:, trajectory_length*num_of_root_infos+1:]
         # print(y.shape)
         # print(angles.shape)
@@ -94,5 +92,56 @@ def pfnn_inference():
     bvh.save("smooth_"+output_path, smoothed_motions)
 
 
+def pfnn_inference_2():
+    dataset = BVHDataset2(base_dir + bvh_path)
+    print(dataset.in_features, dataset.out_features)
+    pfnn = PFNN(dataset.in_features, dataset.out_features).float()
+    pfnn.load_state_dict(torch.load('models/2_pfnn_params8.pkl'))
+    bvh = dataset.bvh
+    init_state = dataset.bvh.motions[0, :num_of_root_infos]
+    init_angles = bvh.motion_angles[0]
+    phase = 0
+    # print(len(dataset[0]))
+    trajectory = dataset[0][0][0][:num_of_root_infos *
+                                  trajectory_length]
+    # print(len(trajectory))
+    motions = np.zeros((frames, bvh.num_of_angles+num_of_root_infos))
+    angles = init_angles
+    state = init_state
+    # print(angles.shape)
+    # print(trajectory)
+    # fake_trajectory = np.zeros((trajectory_length, num_of_root_infos))
+    # fake_trajectory[:, 1] = 0.2*delta_scale
+    for i in range(frames):
+        print('i:  ', i)
+        x = torch.cat(
+            (torch.tensor(trajectory, dtype=torch.float32)
+             .view(1, num_of_root_infos*trajectory_length),
+             torch.tensor(angles, dtype=torch.float32).view(1, 90)), dim=1)
+        y = pfnn(x, phase)
+        # print(y.shape)
+        trajectory = y[:, :trajectory_length*num_of_root_infos]
+        phase += y[0, trajectory_length*num_of_root_infos]/phase_scale
+        phase = phase.detach()
+        print(phase)
+        angles = y[:, trajectory_length*num_of_root_infos+1:]
+        # print(y.shape)
+        # print(angles.shape)
+        # print(state.reshape(1, num_of_root_infos).shape)
+        # print(angles.detach().numpy().shape)
+        state = y[:, :num_of_root_infos].detach().numpy()
+        motions[i] = np.concatenate(
+            (state.reshape(
+                1, num_of_root_infos), angles.detach().numpy()),
+            axis=1)
+    bvh.save("2_"+output_path, motions)
+    smoothed_motions = np.concatenate(
+        (np.zeros((frames, num_of_root_infos)),
+         motions[:, num_of_root_infos:]),
+        axis=1)
+    bvh.save("2_smooth_"+output_path, smoothed_motions)
+
+
 if __name__ == '__main__':
-    pfnn_inference()
+    # pfnn_inference()
+    pfnn_inference_2()
