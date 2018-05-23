@@ -55,7 +55,8 @@ class PFNN(nn.Module):
 
     def forward(self, x, p):
         # p = p.detach()
-        phase = (4*p)/2*np.pi
+        # phase = (4*p)/(2*np.pi)
+        phase = 4*p
         # phase = phase.detach()
         w = phase % 1
         # print(phase)
@@ -118,6 +119,7 @@ if __name__ == "__main__":
     pred = pfnn(x, 0.1)
     print(pred)
     print(pred.shape)
+    # print(pfnn.L2())
     # print(list(pfnn.parameters()))
     # print(pfnn.state_dict())
     # nets = [BaseNet(96, 96) for i in range(4)]

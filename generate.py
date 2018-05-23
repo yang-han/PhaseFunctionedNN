@@ -40,47 +40,49 @@ def base_net_inference():
     bvh.save(output_path, all_states)
 
 
-start_index = 256
+start_index = 196
 
 
 def pfnn_inference():
     dataset = BVHDataset(base_dir + bvh_path)
     print(dataset.in_features, dataset.out_features)
     pfnn = PFNN(dataset.in_features, dataset.out_features).float()
-    pfnn.load_state_dict(torch.load('models/pfnn_params29.pkl'))
+    pfnn.load_state_dict(torch.load('models/pfnn_params90.pkl'))
     bvh = dataset.bvh
     init_state = dataset.bvh.motions[start_index, :num_of_root_infos]
     init_angles = bvh.motion_angles[start_index]
     phase = 0
     # print(len(dataset[0]))
     trajectory = dataset[start_index][0][0][:num_of_root_infos *
-                                    trajectory_length]
-    print(len(trajectory))
+                                            trajectory_length]
+    # print(len(trajectory))
     motions = np.zeros((frames, bvh.num_of_angles+num_of_root_infos))
     angles = init_angles
     state = init_state
-    print(angles.shape)
-    print(trajectory)
+    # print(angles.shape)
+    # print(trajectory)
+    fake_trajectory = np.zeros((trajectory_length, num_of_root_infos))
+    fake_trajectory[:, 1] = 0.2*delta_scale
     for i in range(frames):
         print('i:  ', i)
         x = torch.cat(
-            (torch.tensor(trajectory, dtype=torch.float32)
+            (torch.tensor(fake_trajectory, dtype=torch.float32)
              .view(1, num_of_root_infos*trajectory_length),
              torch.tensor(angles, dtype=torch.float32).view(1, 90)), dim=1)
         y = pfnn(x, phase)
-        print(y.shape)
+        # print(y.shape)
         trajectory = y[:, :trajectory_length*num_of_root_infos]
         phase += y[0, trajectory_length*num_of_root_infos]/phase_scale
         phase = phase.detach()
         angles = y[:, trajectory_length*num_of_root_infos+1:]
-        print(y.shape)
-        print(angles.shape)
+        # print(y.shape)
+        # print(angles.shape)
         delta_state = trajectory[0, :num_of_root_infos]
         delta_state[0] /= delta_scale
         delta_state[2] /= delta_scale
         state += delta_state.detach()
-        print(state.reshape(1, num_of_root_infos).shape)
-        print(angles.detach().numpy().shape)
+        # print(state.reshape(1, num_of_root_infos).shape)
+        # print(angles.detach().numpy().shape)
         motions[i] = np.concatenate(
             (state.reshape(1, num_of_root_infos), angles.detach().numpy()),
             axis=1)

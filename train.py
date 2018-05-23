@@ -64,9 +64,10 @@ def train_pfnn():
                             shuffle=True, num_workers=4)
     net = PFNN(dataset.in_features, dataset.out_features).float().cuda()
     criterion = nn.SmoothL1Loss()
-    optimizer = optim.SGD(net.parameters(), lr=0.0001, momentum=0.9)
-    net.load_state_dict(torch.load('models/pfnn_params29.pkl'))
-    for epoch in range(30, 100):
+    optimizer = optim.SGD(net.parameters(), lr=1e-5,
+                          momentum=0.9, weight_decay=0.0025)
+    net.load_state_dict(torch.load('models/pfnn_params84.pkl'))
+    for epoch in range(85, 100):
         running_loss = 0
         total_loss = 0
         for i, samples in enumerate(dataloader, 0):
