@@ -16,11 +16,17 @@ class BVH:
     def save(self, filepath, motion=None):
         if motion is None:
             motion = self.motion
+        print(filepath)
         with open(filepath, 'w') as f:
+            print("meta...")
             f.write(self.meta_info)
+            print("motion...")
             f.write('MOTION\n')
+            print("frames...")
             f.write('Frames: {}\n'.format(len(motion)))
+            print("frame time...")
             f.write(self.frame_time)
+            print("motions...")
             for m in motion:
                 f.write(' '.join(str(x) for x in m)+'\n')
 

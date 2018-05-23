@@ -54,12 +54,16 @@ class PFNN(nn.Module):
         self.elu = nn.ELU()
 
     def forward(self, x, p):
+        # p = p.detach()
         phase = (4*p)/2*np.pi
+        # phase = phase.detach()
         w = phase % 1
-        k = torch.tensor(np.floor(phase), dtype=torch.int32).cuda()
+        # print(phase)
+        k = torch.tensor(np.floor(phase), dtype=torch.int32,
+                         requires_grad=False)
         base_k = k - 1
         output = torch.zeros((x.shape[0], self.out_features),
-                             dtype=torch.float32).cuda()
+                             dtype=torch.float32)
         y1 = self.elu(self.cubic(self.fc1s[base_k % 4](x),
                                  self.fc1s[(base_k+1) % 4](x),
                                  self.fc1s[(base_k+2) % 4](x),

@@ -40,36 +40,56 @@ def base_net_inference():
     bvh.save(output_path, all_states)
 
 
+start_index = 256
+
+
 def pfnn_inference():
     dataset = BVHDataset(base_dir + bvh_path)
-    pfnn = PFNN(dataset.in_features, dataset.out_features).float().cuda()
-    pfnn.load_state_dict(torch.load('models/pfnn_params19.pkl'))
+    print(dataset.in_features, dataset.out_features)
+    pfnn = PFNN(dataset.in_features, dataset.out_features).float()
+    pfnn.load_state_dict(torch.load('models/pfnn_params29.pkl'))
     bvh = dataset.bvh
-    init_state = dataset.bvh.motions[0, :num_of_root_infos]
-    init_angles = bvh.motion_angles[0]
+    init_state = dataset.bvh.motions[start_index, :num_of_root_infos]
+    init_angles = bvh.motion_angles[start_index]
     phase = 0
-    trajectory = dataset[0][:num_of_root_infos*trajectory_length]
-    motions = torch.zeros(
-        (frames, bvh.num_of_angles+num_of_root_infos), requires_grad=False)
+    # print(len(dataset[0]))
+    trajectory = dataset[start_index][0][0][:num_of_root_infos *
+                                    trajectory_length]
+    print(len(trajectory))
+    motions = np.zeros((frames, bvh.num_of_angles+num_of_root_infos))
     angles = init_angles
     state = init_state
     print(angles.shape)
     print(trajectory)
     for i in range(frames):
+        print('i:  ', i)
         x = torch.cat(
             (torch.tensor(trajectory, dtype=torch.float32)
              .view(1, num_of_root_infos*trajectory_length),
              torch.tensor(angles, dtype=torch.float32).view(1, 90)), dim=1)
-        y = net(x, phase)
-        trajectory = y[:trajectory_length*num_of_root_infos]
-        phase += y[trajectory_length*num_of_frames]/phase_scale
-        angles = y[trajectory_length*num_of_frames+1:]
-        delta_state = trajectory[:num_of_root_infos]
+        y = pfnn(x, phase)
+        print(y.shape)
+        trajectory = y[:, :trajectory_length*num_of_root_infos]
+        phase += y[0, trajectory_length*num_of_root_infos]/phase_scale
+        phase = phase.detach()
+        angles = y[:, trajectory_length*num_of_root_infos+1:]
+        print(y.shape)
+        print(angles.shape)
+        delta_state = trajectory[0, :num_of_root_infos]
         delta_state[0] /= delta_scale
         delta_state[2] /= delta_scale
-        state += delta_state
-        motions[i] = torch.cat((state, angles), dim=1)
-    bvh.save(motions.numpy())
+        state += delta_state.detach()
+        print(state.reshape(1, num_of_root_infos).shape)
+        print(angles.detach().numpy().shape)
+        motions[i] = np.concatenate(
+            (state.reshape(1, num_of_root_infos), angles.detach().numpy()),
+            axis=1)
+    bvh.save(output_path, motions)
+    smoothed_motions = np.concatenate(
+        (np.zeros((frames, num_of_root_infos)),
+         motions[:, num_of_root_infos:]),
+        axis=1)
+    bvh.save("smooth_"+output_path, smoothed_motions)
 
 
 if __name__ == '__main__':
