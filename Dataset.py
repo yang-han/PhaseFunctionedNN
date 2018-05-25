@@ -101,6 +101,6 @@ class BVHDataset2(Dataset):
 
 
 if __name__ == '__main__':
-    dataset = BVHDataSet(base_dir + bvh_path)
+    dataset = BVHDataset(base_dir + bvh_path)
     print(dataset[0])
     print(len(dataset))

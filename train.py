@@ -66,8 +66,8 @@ def train_pfnn():
     criterion = nn.SmoothL1Loss()
     optimizer = optim.SGD(net.parameters(), lr=1e-5,
                           momentum=0.9, weight_decay=0.0025)
-    net.load_state_dict(torch.load('models/2_pfnn_params7.pkl'))
-    for epoch in range(8, 100):
+    net.load_state_dict(torch.load('models/2_pfnn_params35.pkl'))
+    for epoch in range(36, 200):
         running_loss = 0
         total_loss = 0
         for i, samples in enumerate(dataloader, 0):
