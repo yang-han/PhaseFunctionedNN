@@ -63,11 +63,11 @@ def train_pfnn():
     dataloader = DataLoader(dataset, batch_size=4,
                             shuffle=True, num_workers=4)
     net = PFNN(dataset.in_features, dataset.out_features).float().cuda()
-    criterion = nn.SmoothL1Loss()
-    optimizer = optim.SGD(net.parameters(), lr=1e-3,
+    criterion = nn.MSELoss()
+    optimizer = optim.SGD(net.parameters(), lr=1e-5,
                           momentum=0.9, weight_decay=0.0025)
-    # net.load_state_dict(torch.load('models_3/pfnn_params30.pkl'))
-    for epoch in range(0, 200):
+    net.load_state_dict(torch.load('models_4/pfnn_params20.pkl'))
+    for epoch in range(21, 200):
         running_loss = 0
         total_loss = 0
         for i, samples in enumerate(dataloader, 0):
@@ -90,9 +90,9 @@ def train_pfnn():
                       (epoch + 1, i + 1, running_loss / 20))
                 running_loss = 0.0
 
-            writer.add_scalar('data/loss', loss, epoch)
-            torch.save(net.state_dict(),
-                       'models_4/pfnn_params{}.pkl'.format(epoch))
+        writer.add_scalar('data/loss', loss, epoch)
+        torch.save(net.state_dict(),
+                   'models_4/pfnn_params{}.pkl'.format(epoch))
 
     writer.export_scalars_to_json("./test.json")
     writer.close()

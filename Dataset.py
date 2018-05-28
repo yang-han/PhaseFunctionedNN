@@ -114,6 +114,7 @@ class BVHDataset3(Dataset):
         self.phase_deltas_std = np.std(self.phase_deltas, axis=0)
         self.phase_deltas = (self.phase_deltas -
                              self.phase_deltas_mean)/self.phase_deltas_std
+        # self.phase_deltas *= phase_scale
 
         self.root_motions = bvh.motions[start_index:, :num_of_root_infos]
         self.trajectories = self.root_motions[:, [0, 2, 4]]

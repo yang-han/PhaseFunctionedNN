@@ -168,13 +168,13 @@ def pfnn_inference_3():
     bvh = dataset.bvh
     print(dataset.in_features, dataset.out_features)
     pfnn = PFNN(dataset.in_features, dataset.out_features).float().cuda()
-    pfnn.load_state_dict(torch.load('models_3/pfnn_params45.pkl'))
+    pfnn.load_state_dict(torch.load('models_4/pfnn_params13.pkl'))  # 13
     x, phase, y = dataset[100]
     print(x.shape, phase.shape, y.shape)
     x = torch.tensor(x).float()
     all_angles = x[:, trajectory_length*num_of_trajectory_infos:]
     fake_trajectory = np.zeros((trajectory_length, num_of_trajectory_infos))
-    fake_trajectory[:, 1] = 0.2
+    fake_trajectory[:, 1] = 0.5
     fake_trajectory = (fake_trajectory -
                        dataset.trajectory_mean) / dataset.trajectory_std
     print(fake_trajectory)
