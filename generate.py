@@ -3,7 +3,7 @@ import numpy as np
 from PFNN import BaseNet, PFNN
 from BVH import BVH
 from hyperparams import *
-from Dataset import BVHDataset, BVHDataset2
+from Dataset import *
 
 frames = 1000
 
@@ -163,6 +163,60 @@ def pfnn_inference_2():
     bvh.save("2_smooth_left"+output_path, smoothed_motions)
 
 
+def pfnn_inference_3():
+    dataset = BVHDataset3(base_dir + bvh_path)
+    bvh = dataset.bvh
+    print(dataset.in_features, dataset.out_features)
+    pfnn = PFNN(dataset.in_features, dataset.out_features).float().cuda()
+    pfnn.load_state_dict(torch.load('models_3/pfnn_params26.pkl'))
+    x, phase, y = dataset[100]
+    print(x.shape, phase.shape, y.shape)
+    x = torch.tensor(x).float()
+    all_angles = x[:, trajectory_length*num_of_trajectory_infos:]
+    fake_trajectory = np.zeros((trajectory_length, num_of_trajectory_infos))
+    fake_trajectory[:, 1] = 1
+    fake_trajectory = fake_trajectory * \
+        dataset.trajectory_std + dataset.trajectory_mean
+    motions = np.zeros((frames, bvh.num_of_angles+num_of_root_infos))
+    for i in range(frames):
+        print('i:  ', i)
+        x = torch.cat(
+            (torch.tensor(fake_trajectory, dtype=torch.float32)
+             .view(1, num_of_trajectory_infos*trajectory_length),
+             torch.tensor(all_angles, dtype=torch.float32).view(1, 90*2)),
+            dim=1)
+        y = pfnn(x.cuda(), phase)
+        phase += y[0, -1].detach().cpu().double().numpy() * \
+            dataset.phase_deltas_std + dataset.phase_deltas_mean
+        # phase = phase.detach()
+        print(phase)
+        angles_index = trajectory_length*num_of_trajectory_infos
+        angles = y[:, angles_index:angles_index+dataset.bvh.num_of_angles]
+        all_angles = y[:, angles_index:-1]
+        # x = y[:, :-1]
+        # print(y.shape)
+        # print(angles.shape)
+        # print(state.reshape(1, num_of_root_infos).shape)
+        # print(angles.detach().numpy().shape)
+        # state = y[:, :num_of_root_infos].detach().numpy()
+        # motions[i] = np.concatenate(
+        #     (fake_trajectory[0, :num_of_root_infos].reshape(
+        #         1, num_of_root_infos), angles.detach().numpy()),
+        #     axis=1)
+        output_angles = angles.detach().cpu().numpy() * dataset.angles_std + \
+            dataset.angles_mean
+        motions[i] = np.concatenate((
+            np.zeros((1, num_of_root_infos)), output_angles),
+            axis=1)
+    print(motions.shape)
+    bvh.save("3_"+output_path, motions)
+    # smoothed_motions = np.concatenate(
+    #     (np.zeros((frames, num_of_root_infos)),
+    #      motions[:, num_of_root_infos:]),
+    #     axis=1)
+    # bvh.save("2_smooth_left"+output_path, smoothed_motions)
+
+
 if __name__ == '__main__':
     # pfnn_inference()
-    pfnn_inference_2()
+    pfnn_inference_3()

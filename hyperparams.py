@@ -6,6 +6,7 @@ phase_path = 'LocomotionFlat02_000.phase'
 output_path = 'output.bvh'
 
 num_of_root_infos = 6
+num_of_trajectory_infos = 3
 
 trajectory_length = 20
 delta_scale = 2e3
