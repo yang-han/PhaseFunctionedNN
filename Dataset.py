@@ -118,6 +118,10 @@ class BVHDataset3(Dataset):
         self.root_motions = bvh.motions[start_index:, :num_of_root_infos]
         self.trajectories = self.root_motions[:, [0, 2, 4]]
         self.trajectories = self.trajectories[1:] - self.trajectories[:-1]
+
+        print(self.root_motions[:-1, [4]].shape)
+        self.trajectories = np.concatenate(
+            [self.trajectories, self.root_motions[:-1, [4]]], axis=1)
         self.trajectory_mean = np.mean(self.trajectories, axis=0)
         self.trajectory_std = np.std(self.trajectories, axis=0)
         self.trajectories = (self.trajectories -
