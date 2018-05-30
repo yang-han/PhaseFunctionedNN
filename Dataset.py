@@ -114,7 +114,7 @@ class BVHDataset3(Dataset):
         self.phase_deltas_std = np.std(self.phase_deltas, axis=0)
         self.phase_deltas = (self.phase_deltas -
                              self.phase_deltas_mean)/self.phase_deltas_std
-        # self.phase_deltas *= phase_scale
+        self.phase_deltas *= phase_scale
 
         self.root_motions = bvh.motions[start_index:, :num_of_root_infos]
         self.trajectories = self.root_motions[:, [0, 2, 4]]
@@ -127,24 +127,27 @@ class BVHDataset3(Dataset):
         self.trajectory_std = np.std(self.trajectories, axis=0)
         self.trajectories = (self.trajectories -
                              self.trajectory_mean)/self.trajectory_std
+        self.trajectories *= trajectory_scale
 
         self.angles = self.bvh.motion_angles[start_index:]
         self.angles_mean = np.mean(self.angles, axis=0)
         self.angles_std = np.std(self.angles, axis=0)
-        self.angles = (self.angles-self.angles_mean) / \
-            (self.angles_std+(self.angles_std == 0))
-        print(self.angles_mean.shape)
+        # print(self.angles_mean.shape)
         # print(self.angles_std)
         # print(self.angles)
         print(self.angles.shape)
         self.angles_delta = self.angles[1:] - self.angles[:-1]
         self.angles_delta_mean = np.mean(self.angles_delta, axis=0)
         self.angles_delta_std = np.std(self.angles_delta, axis=0)
+
+        self.angles = (self.angles-self.angles_mean) / \
+            (self.angles_std+(self.angles_std == 0))
         self.angles_delta = (self.angles_delta-self.angles_delta_mean) / \
             (self.angles_delta_std+(self.angles_delta_std == 0))
 
     def __len__(self):
-        return self.bvh.length - trajectory_length - 1 - start_index
+        magic_length = 1
+        return self.bvh.length - trajectory_length - 1 - start_index - 1
 
     @property
     def in_features(self):
@@ -158,24 +161,24 @@ class BVHDataset3(Dataset):
 
     def __getitem__(self, idx):
         X = np.concatenate(
-            (self.trajectories[idx:idx+trajectory_length]
-             .reshape((1, trajectory_length *
-                       num_of_trajectory_infos)),
-             self.angles[idx]
-             .reshape((1, self.bvh.num_of_angles)),
-             self.angles_delta[idx].reshape((1, self.bvh.num_of_angles))
-             ),
-            axis=1)
-        Y = np.concatenate(
             (self.trajectories[idx+1:idx+trajectory_length+1]
              .reshape((1, trajectory_length *
                        num_of_trajectory_infos)),
              self.angles[idx+1]
              .reshape((1, self.bvh.num_of_angles)),
-             self.angles_delta[idx+1].reshape((1, self.bvh.num_of_angles)),
-             self.phase_deltas[idx].reshape((1, 1))),
+             self.angles_delta[idx].reshape((1, self.bvh.num_of_angles))
+             ),
             axis=1)
-        return (X, self.phases[idx], Y)
+        Y = np.concatenate(
+            (self.trajectories[idx+1+1:idx+1+trajectory_length+1]
+             .reshape((1, trajectory_length *
+                       num_of_trajectory_infos)),
+             self.angles[idx+2]
+             .reshape((1, self.bvh.num_of_angles)),
+             self.angles_delta[idx+1].reshape((1, self.bvh.num_of_angles)),
+             self.phase_deltas[idx+1].reshape((1, 1))),
+            axis=1)
+        return (X, self.phases[idx+1], Y)
 
 
 if __name__ == '__main__':
