@@ -10,8 +10,8 @@ num_of_trajectory_infos = 4
 
 trajectory_length = 20
 delta_scale = 2e3
-phase_scale = 10
-trajectory_scale = 10
-angles_scale = 1
+phase_scale = 1
+trajectory_scale = 1
+angles_scale = 0.1
 
 start_index = 196

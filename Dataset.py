@@ -109,7 +109,7 @@ class BVHDataset3(Dataset):
         self.phases = np.loadtxt(data_path.replace('bvh', 'phase'))[
             start_index:]
         self.phase_deltas = (self.phases[1:] - self.phases[:-1])
-
+        self.phase_deltas[self.phase_deltas < 0] += 1
         self.phase_deltas_mean = np.mean(self.phase_deltas, axis=0)
         self.phase_deltas_std = np.std(self.phase_deltas, axis=0)
         self.phase_deltas = (self.phase_deltas -
@@ -144,6 +144,9 @@ class BVHDataset3(Dataset):
             (self.angles_std+(self.angles_std == 0))
         self.angles_delta = (self.angles_delta-self.angles_delta_mean) / \
             (self.angles_delta_std+(self.angles_delta_std == 0))
+
+        self.angles *= angles_scale
+        self.angles_delta *= angles_scale
 
     def __len__(self):
         magic_length = 1

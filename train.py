@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data.dataset import Dataset
 from torch.utils.data.dataloader import DataLoader
-from tensorboardX import SummaryWriter
+# from tensorboardX import SummaryWriter
 from hyperparams import *
 from BVH import BVH
 from SeqDataset import SeqBVHDataset
@@ -13,7 +13,7 @@ from Dataset import *
 
 
 def train_base_net():
-    writer = SummaryWriter()
+    # writer = SummaryWriter()
     bvh = BVH()
     bvh.load(bvh_path)
     print(bvh.motions[:, 6:].shape)
@@ -53,21 +53,21 @@ def train_base_net():
                    'models/singleF_params{}.pkl'.format(epoch))
         # net.load_state_dict(torch.load('params.pkl'))
 
-    writer.export_scalars_to_json("./test.json")
-    writer.close()
+    # writer.export_scalars_to_json("./test.json")
+    # writer.close()
 
 
 def train_pfnn():
-    writer = SummaryWriter()
+    # writer = SummaryWriter()
     dataset = BVHDataset3(base_dir + bvh_path)
-    dataloader = DataLoader(dataset, batch_size=4,
+    dataloader = DataLoader(dataset, batch_size=8,
                             shuffle=True, num_workers=4)
     net = PFNN(dataset.in_features, dataset.out_features).float().cuda()
     criterion = nn.MSELoss()
-    optimizer = optim.SGD(net.parameters(), lr=1e-4,
+    optimizer = optim.SGD(net.parameters(), lr=1e-5,
                           momentum=0.9, weight_decay=0.0025)
-    # net.load_state_dict(torch.load('models_5/pfnn_params34.pkl'))
-    for epoch in range(0, 200):
+    net.load_state_dict(torch.load('models_7/pfnn_params35.pkl'))
+    for epoch in range(36, 200):
         running_loss = 0
         total_loss = 0
         for i, samples in enumerate(dataloader, 0):
@@ -92,10 +92,10 @@ def train_pfnn():
 
         writer.add_scalar('data/loss', loss, epoch)
         torch.save(net.state_dict(),
-                   'models_6/pfnn_params{}.pkl'.format(epoch))
+                   'models_7/pfnn_params{}.pkl'.format(epoch))
 
-    writer.export_scalars_to_json("./test.json")
-    writer.close()
+    # writer.export_scalars_to_json("./test.json")
+    # writer.close()
 
 
 if __name__ == "__main__":

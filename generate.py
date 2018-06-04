@@ -173,13 +173,13 @@ def pfnn_inference_3():
     bvh = dataset.bvh
     print(dataset.in_features, dataset.out_features)
     pfnn = PFNN(dataset.in_features, dataset.out_features).float().cuda()
-    pfnn.load_state_dict(torch.load('models_6/pfnn_params29.pkl'))  # 13
-    x, phase, y = dataset[150]
+    pfnn.load_state_dict(torch.load('models_7/pfnn_params199.pkl'))  # 13
+    x, phase, y = dataset[198]
     print(x.shape, phase.shape, y.shape)
     x = torch.tensor(x).float()
     all_angles = x[:, trajectory_length*num_of_trajectory_infos:]
     fake_trajectory = np.zeros((trajectory_length, num_of_trajectory_infos))
-    fake_trajectory[:, 1] = 0.01
+    fake_trajectory[:, 1] = 0.2
     fake_trajectory = (fake_trajectory -
                        dataset.trajectory_mean) / dataset.trajectory_std
     fake_trajectory *= trajectory_scale
@@ -192,11 +192,13 @@ def pfnn_inference_3():
         if i == 0:
             angles = all_angles[:, :num_of_angles].numpy()
             angles_delta = all_angles[:, num_of_angles:]
-            last_angles = angles*dataset.angles_std + dataset.angles_mean
+            last_angles = (angles / angles_scale) * \
+                dataset.angles_std + dataset.angles_mean
         else:
             angles_delta = output_angles - last_angles
             angles_delta = (angles_delta - dataset.angles_delta_mean) / \
                 (dataset.angles_delta_std+(dataset.angles_delta_std == 0))
+            angles_delta *= angles_scale
             last_angles = output_angles
         x = torch.cat(
             (torch.tensor(fake_trajectory, dtype=torch.float32)
@@ -206,7 +208,7 @@ def pfnn_inference_3():
              ),
             dim=1)
         y = pfnn(x.cuda(), phase)
-        phase += y[0, -1].detach().cpu().double().numpy() / phase_scale * \
+        phase += (y[0, -1].detach().cpu().double().numpy() / phase_scale) * \
             dataset.phase_deltas_std + dataset.phase_deltas_mean
         # phase = phase.detach()
         print(phase)
@@ -223,13 +225,13 @@ def pfnn_inference_3():
         #     (fake_trajectory[0, :num_of_root_infos].reshape(
         #         1, num_of_root_infos), angles.detach().numpy()),
         #     axis=1)
-        output_angles = angles.detach().cpu().numpy() * dataset.angles_std + \
-            dataset.angles_mean
+        output_angles = (angles.detach().cpu().numpy() / angles_scale) * \
+            dataset.angles_std + dataset.angles_mean
         motions[i] = np.concatenate((
             np.zeros((1, num_of_root_infos)), output_angles),
             axis=1)
     print(motions.shape)
-    bvh.save("4_back_"+output_path, motions)
+    bvh.save("7_"+output_path, motions)
     # smoothed_motions = np.concatenate(
     #     (np.zeros((frames, num_of_root_infos)),
     #      motions[:, num_of_root_infos:]),
@@ -238,5 +240,10 @@ def pfnn_inference_3():
 
 
 if __name__ == '__main__':
+    # dataset = BVHDataset3(base_dir + bvh_path)
+    # pfnn = PFNN(dataset.in_features, dataset.out_features).float().cuda()
+    # pfnn.load_state_dict(torch.load('models_7/pfnn_params34.pkl'))  # 13
+    # print(pfnn.state_dict())
+
     # pfnn_inference()
     pfnn_inference_3()
